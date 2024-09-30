@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS App Runner service for Bedrock Model Invocation'
+
+Parameters:
+  ECRImageUri:
+    Type: String
+    Description: 'The URI of your ECR image (e.g., 123456789012.dkr.ecr.us-west-2.amazonaws.com/bedrock-app-runner:latest)'
+
+  ServiceName:
+    Type: String
+    Default: 'bedrock-app-runner-service'
+    Description: 'The name of the App Runner service'
+
+Resources:
+  AppRunnerServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - build.apprunner.amazonaws.com
+                - tasks.apprunner.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess'
+      Policies:
+        - PolicyName: BedrockInvokeAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'bedrock:InvokeModel'
+                Resource: '*'
+
+  AppRunnerInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - tasks.apprunner.amazonaws.com
+                - build.apprunner.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess'
+      Policies:
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'bedrock:InvokeModel'
+                Resource: '*'
+
+  AppRunnerService:
+    Type: 'AWS::AppRunner::Service'
+    Properties:
+      ServiceName: !Ref ServiceName
+      SourceConfiguration:
+        AuthenticationConfiguration:
+          AccessRoleArn: !GetAtt AppRunnerServiceRole.Arn
+        ImageRepository:
+          ImageIdentifier: !Ref ECRImageUri
+          ImageRepositoryType: ECR
+          ImageConfiguration:
+            Port: '8080'
+      InstanceConfiguration:
+        Cpu: '1 vCPU'
+        Memory: '2 GB'
+        InstanceRoleArn: !GetAtt AppRunnerInstanceRole.Arn
+
+
+
+Outputs:
+  ServiceUrl:
+    Description: 'URL of the App Runner service'
+    Value: !GetAtt AppRunnerService.ServiceUrl
