@@ -5,6 +5,8 @@ This project demonstrates how to deploy an AI-powered application using AWS App 
 
 ## Architecture Overview
 
+![steamlitapp](https://github.com/rahulsing/aws-apprunner-bedrock/blob/main/AppRunnerCapture.PNG?raw=true)
+
 This application uses the following AWS services and components:
 
 1. **AWS App Runner**: A fully managed service that makes it easy to deploy containerized web applications and APIs.
